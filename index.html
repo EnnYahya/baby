@@ -80,7 +80,7 @@
     <div class="row"><button id="cuddle" type="button">Cuddle</button><span></span></div>
     <div class="bar">
       <button id="voiceToggle" type="button">Voice: off</button>
-      <select id="langSel" aria-label="Language"><option value="en-US">English</option><option value="fr-FR">Francais</option></select>
+      <select id="langSel" aria-label="Language"><option value="en-US">English</option><option value="ar-SA">العربية</option></select>
       <button id="micBtn" class="hidden" type="button">Tap to talk</button>
     </div>
     <div id="chatLog" class="chat" aria-live="polite"></div>
@@ -321,7 +321,7 @@
     for (const m of (current.chat || []).slice(-10)) {
       const p = document.createElement("p");
       p.className = m.r;
-      p.textContent = (m.r === "u" ? "You" : current.name) + ": " + m.t;
+      p.textContent = (m.r === "u" ? "You" : current.name) + ": " + m.t; p.dir = "auto";
       log.append(p);
     }
     log.scrollTop = log.scrollHeight;
@@ -337,7 +337,7 @@
     busy = true; lastChat = Date.now();
     $("chatInput").value = "";
     const log = $("chatLog");
-    const mine = document.createElement("p"); mine.textContent = "You: " + text; log.append(mine);
+    const mine = document.createElement("p"); mine.textContent = "You: " + text; mine.dir = "auto"; log.append(mine);
     const wait = document.createElement("p"); wait.className = "b"; wait.textContent = current.name + ": ..."; log.append(wait);
     log.scrollTop = log.scrollHeight;
     try {

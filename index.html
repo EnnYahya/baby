@@ -81,6 +81,7 @@
     <div class="bar">
       <button id="voiceToggle" type="button">Voice: off</button>
       <select id="langSel" aria-label="Language"><option value="en-US">English</option><option value="ar-SA">العربية</option></select>
+      <select id="voiceSel" aria-label="Voice"></select>
       <button id="micBtn" class="hidden" type="button">Tap to talk</button>
     </div>
     <div id="chatLog" class="chat" aria-live="polite"></div>
@@ -155,7 +156,7 @@
   import { playGame } from "./games.js";
   import { drawScene } from "./park.js";
   import { AI_URL } from "./ai-config.js";
-  import { voiceInputOK, speak, stopSpeaking, listen } from "./voice.js";
+  import { voiceInputOK, speak, stopSpeaking, listen, voicesFor, onVoicesReady } from "./voice.js";
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
@@ -344,7 +345,7 @@
       const before = stageFor(current.xp).label;
       const r = await askBaby(AI_URL, current, before, text);
       const { update, gain } = applyReply(current, text, r);
-      if (voiceOn) speak(update.chat[update.chat.length - 1].t, before, current.gender, update.mood, $("langSel").value);
+      if (voiceOn) speak(update.chat[update.chat.length - 1].t, before, current.gender, update.mood, $("langSel").value, $("voiceSel").value);
       await updateDoc(doc(db, "babies", auth.currentUser.uid), { ...update, xp: increment(gain) });
       Object.assign(current, update);
       current.xp = (current.xp || 0) + gain;
@@ -374,7 +375,25 @@
     try { localStorage.setItem("voiceOn", voiceOn ? "1" : "0"); } catch {}
     paintVoice();
   };
-  $("langSel").onchange = () => { try { localStorage.setItem("lang", $("langSel").value); } catch {} };
+  function fillVoices() {
+    const sel = $("voiceSel");
+    let saved = "";
+    try { saved = localStorage.getItem("voiceName") || ""; } catch {}
+    sel.textContent = "";
+    for (const v of voicesFor($("langSel").value)) {
+      const o = document.createElement("option");
+      o.value = v.name; o.textContent = v.name.replace(/^Microsoft /, "").slice(0, 38);
+      sel.append(o);
+    }
+    if ([...sel.options].some(o => o.value === saved)) sel.value = saved;
+    sel.classList.toggle("hidden", sel.options.length < 2);
+  }
+  $("voiceSel").onchange = () => {
+    try { localStorage.setItem("voiceName", $("voiceSel").value); } catch {}
+    speak("Hi!", "child", current.gender, "happy", $("langSel").value, $("voiceSel").value);
+  };
+  $("langSel").onchange = () => { try { localStorage.setItem("lang", $("langSel").value); } catch {} fillVoices(); };
+  onVoicesReady(fillVoices);
   $("micBtn").onclick = () => {
     if (listening) return listening.stop();
     if (!voiceInputOK()) return say("Voice input needs Chrome or Edge. You can still type.", "bad");
@@ -410,7 +429,7 @@
   function startGame(g) {
     const stage = stageFor(current.xp).label;
     $("gameArea").classList.remove("hidden");
-    if (voiceOn && g.intro) speak(g.intro, stage, current.gender, current.mood, $("langSel").value);
+    if (voiceOn && g.intro) speak(g.intro, stage, current.gender, current.mood, $("langSel").value, $("voiceSel").value);
     playGame(g, $("gameArea"), stage, async () => {
       const pt = playTick(current);
       const t = traitsOf(current);

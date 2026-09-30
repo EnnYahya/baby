@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Baby</title>
+<style>
+  :root { --bg:#14110f; --panel:#1d1915; --ink:#f2e8d5; --dim:#8a7f6d; --glow:#ffb347; --ok:#8fd694; --bad:#ff7b6b; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; background:var(--bg); color:var(--ink); font-family:"Courier New",monospace; padding:20px; display:grid; place-items:start center; }
+  main { width:100%; max-width:480px; }
+  h1 { font-size:1.2rem; font-weight:normal; margin:0 0 14px; }
+  p { color:var(--dim); margin:6px 0; }
+  pre#baby, pre#dBaby, pre#parkScene { color:var(--glow); font-size:clamp(11px,3.4vw,17px); line-height:1.1; margin:10px 0 18px; white-space:pre; overflow-x:auto; }
+  .hidden { display:none !important; }
+  .tabs { display:flex; gap:8px; margin-bottom:14px; }
+  button, input { font:inherit; }
+  button { background:var(--panel); color:var(--ink); border:1px solid var(--dim); padding:10px 14px; cursor:pointer; }
+  button:hover, button:focus-visible { border-color:var(--glow); outline:none; }
+  button.on { border-color:var(--glow); color:var(--glow); }
+  button.danger { border-color:var(--bad); color:var(--bad); }
+  form { display:grid; gap:12px; }
+  label { display:grid; gap:4px; color:var(--dim); }
+  input[type=text], input[type=password], input[type=number] { background:var(--panel); color:var(--ink); border:1px solid var(--dim); padding:10px; }
+  input:focus-visible { border-color:var(--glow); outline:none; }
+  fieldset { border:1px solid var(--dim); padding:8px 12px; display:flex; gap:20px; }
+  fieldset label { display:flex; gap:6px; align-items:center; color:var(--ink); }
+  #msg { margin-top:14px; min-height:1.4em; }
+  #msg.bad { color:var(--bad); } #msg.ok { color:var(--ok); }
+  .card { border:1px solid var(--dim); padding:10px 12px; margin:8px 0; display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .row { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .stats p { color:var(--ink); }
+  .chat { border:1px solid var(--dim); padding:10px; max-height:230px; overflow-y:auto; margin:12px 0; min-height:60px; }
+  .chat p { margin:4px 0; color:var(--ink); } .chat p.b { color:var(--glow); }
+  .chatForm { display:flex; gap:8px; } .chatForm input { flex:1; min-width:0; }
+  .bar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:12px 0; }
+  select { background:var(--panel); color:var(--ink); border:1px solid var(--dim); padding:10px; font:inherit; }
+  select:focus-visible { border-color:var(--glow); outline:none; }
+  .chat p button { padding:2px 8px; margin-left:8px; font-size:.85em; }
+</style>
+</head>
+<body>
+<main>
+
+  <!-- LOGIN / SIGNUP -->
+  <section id="auth">
+    <h1>Welcome. Your baby is waiting.</h1>
+    <div class="tabs">
+      <button id="tabLogin" class="on" type="button">Log in</button>
+      <button id="tabSignup" type="button">Create account</button>
+    </div>
+
+    <form id="loginForm">
+      <label>Username <input id="lUser" type="text" autocomplete="username" required></label>
+      <label>Password <input id="lPass" type="password" autocomplete="current-password" required></label>
+      <button type="submit">Log in</button>
+    </form>
+
+    <form id="signupForm" class="hidden">
+      <label>Username (letters, numbers, underscore) <input id="sUser" type="text" autocomplete="username" required></label>
+      <label>Baby name <input id="sBaby" type="text" maxlength="20" required></label>
+      <fieldset>
+        <legend>Baby gender</legend>
+        <label><input type="radio" name="gender" value="male" checked> Male</label>
+        <label><input type="radio" name="gender" value="female"> Female</label>
+      </fieldset>
+      <label>Password (6 characters minimum) <input id="sPass" type="password" autocomplete="new-password" required></label>
+      <button type="submit">Create account</button>
+    </form>
+  </section>
+
+  <!-- BABY HOME -->
+  <section id="home" class="hidden">
+    <div class="row"><h1 id="homeTitle"></h1><button id="logout1" type="button">Log out</button></div>
+    <pre id="baby"></pre>
+    <div class="stats">
+      <p id="babyInfo"></p>
+      <p>Visit the park to meet other players and babies.</p>
+    </div>
+    <div class="row"><button id="cuddle" type="button">Cuddle</button><span></span></div>
+    <div class="bar">
+      <button id="voiceToggle" type="button">Voice: off</button>
+      <select id="langSel" aria-label="Language"><option value="en-US">English</option><option value="fr-FR">Francais</option></select>
+      <button id="micBtn" class="hidden" type="button">Tap to talk</button>
+    </div>
+    <div id="chatLog" class="chat" aria-live="polite"></div>
+    <form id="chatForm" class="chatForm">
+      <input id="chatInput" type="text" maxlength="300" autocomplete="off" placeholder="Say something to your baby" required>
+      <button type="submit">Send</button>
+    </form>
+    <p id="chatLeft"></p>
+    <div class="bar"><button id="gamesBtn" type="button">Games</button><button id="parkBtn" type="button">Online park</button></div>
+    <div id="gamePanel" class="hidden">
+      <div id="gameList"></div>
+      <div class="bar"><button id="inventBtn" type="button">Ask baby to invent a game</button></div>
+      <div id="gameArea" class="chat hidden"></div>
+    </div>
+    <div class="row" style="margin-top:14px"><span></span><button id="toAdmin" class="hidden" type="button">Admin panel</button></div>
+  </section>
+
+  <!-- NO BABY (released by admin) -->
+  <section id="adopt" class="hidden">
+    <h1>Your baby was released. Adopt a new one?</h1>
+    <form id="adoptForm">
+      <label>Baby name <input id="aBaby" type="text" maxlength="20" required></label>
+      <fieldset>
+        <legend>Baby gender</legend>
+        <label><input type="radio" name="agender" value="male" checked> Male</label>
+        <label><input type="radio" name="agender" value="female"> Female</label>
+      </fieldset>
+      <button type="submit">Adopt</button>
+    </form>
+    <p><button id="logout2" type="button">Log out</button></p>
+  </section>
+
+  <!-- PARK -->
+  <section id="park" class="hidden">
+    <div class="row"><h1>Online park</h1><button id="leavePark" type="button">Leave park</button></div>
+    <pre id="parkScene"></pre>
+    <p id="parkWho"></p>
+    <div id="parkFeed" class="chat" aria-live="polite"></div>
+    <form id="parkForm" class="chatForm">
+      <input id="parkInput" type="text" maxlength="200" autocomplete="off" placeholder="Say something in the park" required>
+      <button type="submit">Send</button>
+    </form>
+    <p id="parkLeft"></p>
+  </section>
+
+  <!-- ADMIN -->
+  <section id="admin" class="hidden">
+    <div class="row"><h1>Admin: all babies</h1><span><button id="toHome" type="button">My baby</button> <button id="logout3" type="button">Log out</button></span></div>
+    <div id="list"></div>
+    <div id="detail" class="hidden">
+      <pre id="dBaby"></pre>
+      <div class="stats" id="dInfo"></div>
+      <button id="grow1" type="button">+50 growth</button> <button id="grow2" type="button">+500 growth</button>
+      <button id="release" class="danger" type="button">Release this baby</button>
+      <button id="closeDetail" type="button">Back to list</button>
+    </div>
+  </section>
+
+  <div id="msg" role="status"></div>
+</main>
+
+<script type="module">
+  import { firebaseConfig } from "./firebase-config.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, getDocs, deleteDoc, collection, serverTimestamp, updateDoc, increment, onSnapshot, addDoc, query, orderBy, limit }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  import { renderBaby, stageFor } from "./baby-art.js";
+  import { askBaby, applyReply, chatLeft, traitText, traitsOf, inventGame, usage, playTick, GAME_STAGES, applyMeet } from "./brain.js";
+  import { playGame } from "./games.js";
+  import { drawScene } from "./park.js";
+  import { AI_URL } from "./ai-config.js";
+  import { voiceInputOK, speak, stopSpeaking, listen } from "./voice.js";
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const $ = id => document.getElementById(id);
+
+  // The website turns a username into a hidden email, because Firebase logins need one.
+  const toEmail = u => u.trim().toLowerCase() + "@babygame.app";
+  const validUser = u => /^[a-z0-9_]{3,20}$/i.test(u.trim());
+
+  let tick = 0, isAdmin = false, current = null, selected = null, selectedData = null, happyUntil = 0, lastCuddle = 0, busy = false, lastChat = 0;
+  function moodNow(b) { return Date.now() < happyUntil ? "happy" : (b.mood || "calm"); }
+  setInterval(() => {
+    tick++;
+    if (!$("home").classList.contains("hidden") && current) $("baby").textContent = renderBaby(stageFor(current.xp), moodNow(current), tick);
+    if (!$("detail").classList.contains("hidden") && selectedData) $("dBaby").textContent = renderBaby(stageFor(selectedData.xp), selectedData.mood || "calm", tick);
+    if (!$("park").classList.contains("hidden")) paintPark();
+  }, 250);
+
+  function say(text, kind = "") { $("msg").textContent = text; $("msg").className = kind; }
+  function show(name) {
+    for (const s of ["auth", "home", "adopt", "admin", "park"]) $(s).classList.toggle("hidden", s !== name);
+    say("");
+  }
+  function nice(err) {
+    const c = err.code || "";
+    if (c.includes("email-already-in-use")) return "That username is already taken.";
+    if (c.includes("invalid-credential") || c.includes("wrong-password") || c.includes("user-not-found")) return "Wrong username or password.";
+    if (c.includes("weak-password")) return "Password needs at least 6 characters.";
+    if (c.includes("too-many-requests")) return "Too many tries. Wait a few minutes.";
+    if (c.includes("operation-not-allowed")) return "Email/Password login is not turned on in Firebase yet.";
+    return err.message;
+  }
+  function babyInfo(b) {
+    return "Stage: " + stageFor(b.xp).label + " | Gender: " + b.gender + " | Owner: " + b.owner + " | Growth: " + (b.xp || 0);
+  }
+
+  // Tabs
+  $("tabLogin").onclick = () => { $("loginForm").classList.remove("hidden"); $("signupForm").classList.add("hidden"); $("tabLogin").classList.add("on"); $("tabSignup").classList.remove("on"); say(""); };
+  $("tabSignup").onclick = () => { $("signupForm").classList.remove("hidden"); $("loginForm").classList.add("hidden"); $("tabSignup").classList.add("on"); $("tabLogin").classList.remove("on"); say(""); };
+
+  // Sign up
+  $("signupForm").onsubmit = async e => {
+    e.preventDefault();
+    const username = $("sUser").value.trim().toLowerCase();
+    const babyName = $("sBaby").value.trim();
+    const gender = document.querySelector('input[name="gender"]:checked').value;
+    if (!validUser(username)) return say("Username: 3 to 20 letters, numbers or underscore, no spaces.", "bad");
+    if (!babyName) return say("Give your baby a name.", "bad");
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, toEmail(username), $("sPass").value);
+      await setDoc(doc(db, "babies", cred.user.uid), newBaby(username, babyName, gender));
+    } catch (err) { say(nice(err), "bad"); }
+  };
+  function newBaby(owner, name, gender) {
+    return { owner, name, gender, stage: "newborn", xp: 0, mood: "calm", personality: {}, createdAt: serverTimestamp() };
+  }
+
+  // Log in
+  $("loginForm").onsubmit = async e => {
+    e.preventDefault();
+    try { await signInWithEmailAndPassword(auth, toEmail($("lUser").value), $("lPass").value); }
+    catch (err) { say(nice(err), "bad"); }
+  };
+
+  // Adopt a new baby after release
+  $("adoptForm").onsubmit = async e => {
+    e.preventDefault();
+    const name = $("aBaby").value.trim();
+    const gender = document.querySelector('input[name="agender"]:checked').value;
+    const owner = auth.currentUser.email.split("@")[0];
+    try { await setDoc(doc(db, "babies", auth.currentUser.uid), newBaby(owner, name, gender)); await loadHome(); }
+    catch (err) { say(nice(err), "bad"); }
+  };
+
+  // Log out
+  for (const id of ["logout1", "logout2", "logout3"]) $(id).onclick = () => signOut(auth);
+
+  // Home
+  async function loadHome() {
+    const snap = await getDoc(doc(db, "babies", auth.currentUser.uid));
+    if (!snap.exists()) return show("adopt");
+    current = snap.data();
+    $("homeTitle").textContent = current.name;
+    $("babyInfo").textContent = babyInfo(current);
+    $("baby").textContent = renderBaby(stageFor(current.xp), moodNow(current), tick);
+    renderChat(); updateLeft();
+    $("gamePanel").classList.add("hidden"); $("gameArea").classList.add("hidden"); $("gameArea").textContent = "";
+    $("toAdmin").classList.toggle("hidden", !isAdmin);
+    show("home");
+  }
+
+  // Admin
+  $("toAdmin").onclick = loadAdmin;
+  $("toHome").onclick = loadHome;
+  async function loadAdmin() {
+    show("admin");
+    $("detail").classList.add("hidden");
+    $("list").classList.remove("hidden");
+    $("list").textContent = "Loading...";
+    try {
+      const snap = await getDocs(collection(db, "babies"));
+      $("list").textContent = "";
+      if (snap.empty) $("list").textContent = "No babies yet.";
+      snap.forEach(d => {
+        const b = d.data();
+        const card = document.createElement("div");
+        card.className = "card";
+        const label = document.createElement("span");
+        label.textContent = b.name + " (" + b.owner + ", " + stageFor(b.xp).label + ")";
+        const btn = document.createElement("button");
+        btn.textContent = "Open";
+        btn.onclick = () => openBaby(d.id, b);
+        card.append(label, btn);
+        $("list").append(card);
+      });
+    } catch (err) { say(nice(err), "bad"); }
+  }
+  function openBaby(id, b) {
+    selected = id; selectedData = b;
+    $("list").classList.add("hidden");
+    $("detail").classList.remove("hidden");
+    $("dInfo").textContent = "";
+    const lines = ["Name: " + b.name, babyInfo(b), "Mood: " + b.mood, "Personality: " + traitText(b),
+      "Words known: " + ((b.words || []).join(", ") || "none"),
+      "Memories: " + ((b.memories || []).join(" | ") || "none"),
+      "Games: " + ((b.games || []).map(g => g.title).join(", ") || "none"),
+      "Last messages:"];
+    for (const m of (b.chat || []).slice(-6)) lines.push((m.r === "u" ? b.owner : b.name) + ": " + m.t);
+    for (const line of lines) {
+      const p = document.createElement("p"); p.textContent = line; $("dInfo").append(p);
+    }
+  }
+  $("closeDetail").onclick = loadAdmin;
+  $("release").onclick = async () => {
+    if (!selected || !confirm("Release this baby? This deletes it for good.")) return;
+    try { await deleteDoc(doc(db, "babies", selected)); say("Baby released.", "ok"); await loadAdmin(); }
+    catch (err) { say(nice(err), "bad"); }
+  };
+
+  async function addXp(id, amount) { await updateDoc(doc(db, "babies", id), { xp: increment(amount) }); }
+  $("cuddle").onclick = async () => {
+    if (Date.now() - lastCuddle < 10000) return say("Your baby needs a moment. Try again in a few seconds.");
+    lastCuddle = Date.now(); happyUntil = Date.now() + 5000;
+    const before = stageFor(current.xp).label;
+    try {
+      await addXp(auth.currentUser.uid, 2);
+      current.xp = (current.xp || 0) + 2;
+      $("babyInfo").textContent = babyInfo(current);
+      const after = stageFor(current.xp).label;
+      const art = /^[aeiou]/.test(after) ? "an" : "a";
+      say(after !== before ? current.name + " grew into " + art + " " + after + "!" : current.name + " giggles.", "ok");
+    } catch (err) { say(nice(err), "bad"); }
+  };
+  for (const [id, amt] of [["grow1", 50], ["grow2", 500]]) $(id).onclick = async () => {
+    try { await addXp(selected, amt); selectedData.xp = (selectedData.xp || 0) + amt; openBaby(selected, selectedData); say("Growth added.", "ok"); }
+    catch (err) { say(nice(err), "bad"); }
+  };
+
+  function renderChat() {
+    const log = $("chatLog");
+    log.textContent = "";
+    for (const m of (current.chat || []).slice(-10)) {
+      const p = document.createElement("p");
+      p.className = m.r;
+      p.textContent = (m.r === "u" ? "You" : current.name) + ": " + m.t;
+      log.append(p);
+    }
+    log.scrollTop = log.scrollHeight;
+  }
+  function updateLeft() { $("chatLeft").textContent = chatLeft(current) + " messages left today"; }
+
+  $("chatForm").onsubmit = e => { e.preventDefault(); sendToBaby($("chatInput").value.trim()); };
+  async function sendToBaby(text) {
+    if (!text || busy) return;
+    if (AI_URL.includes("PASTE")) return say("The AI is not connected yet. Add the Worker link in ai-config.js.", "bad");
+    if (chatLeft(current) <= 0) return say("Your baby is tired for today. Come back tomorrow.");
+    if (Date.now() - lastChat < 3000) return say("Give your baby a second to think.");
+    busy = true; lastChat = Date.now();
+    $("chatInput").value = "";
+    const log = $("chatLog");
+    const mine = document.createElement("p"); mine.textContent = "You: " + text; log.append(mine);
+    const wait = document.createElement("p"); wait.className = "b"; wait.textContent = current.name + ": ..."; log.append(wait);
+    log.scrollTop = log.scrollHeight;
+    try {
+      const before = stageFor(current.xp).label;
+      const r = await askBaby(AI_URL, current, before, text);
+      const { update, gain } = applyReply(current, text, r);
+      if (voiceOn) speak(update.chat[update.chat.length - 1].t, before, current.gender, update.mood, $("langSel").value);
+      await updateDoc(doc(db, "babies", auth.currentUser.uid), { ...update, xp: increment(gain) });
+      Object.assign(current, update);
+      current.xp = (current.xp || 0) + gain;
+      $("babyInfo").textContent = babyInfo(current);
+      const after = stageFor(current.xp).label;
+      if (after !== before) say(current.name + " grew into " + (/^[aeiou]/.test(after) ? "an " : "a ") + after + "!", "ok");
+      else say("");
+    } catch (err) {
+      $("chatInput").value = text;
+      say(err.message === "rate" ? "Your baby is sleeping (the free AI is busy). Try again in a minute." : "Your baby could not answer. Try again.", "bad");
+    } finally {
+      busy = false; renderChat(); updateLeft();
+    }
+  }
+
+  let voiceOn = false, listening = null;
+  try { voiceOn = localStorage.getItem("voiceOn") === "1"; $("langSel").value = localStorage.getItem("lang") || "en-US"; } catch {}
+  function paintVoice() {
+    $("voiceToggle").textContent = "Voice: " + (voiceOn ? "on" : "off");
+    $("voiceToggle").classList.toggle("on", voiceOn);
+    $("micBtn").classList.toggle("hidden", !voiceOn);
+  }
+  paintVoice();
+  $("voiceToggle").onclick = () => {
+    voiceOn = !voiceOn;
+    if (!voiceOn) { stopSpeaking(); if (listening) listening.stop(); }
+    try { localStorage.setItem("voiceOn", voiceOn ? "1" : "0"); } catch {}
+    paintVoice();
+  };
+  $("langSel").onchange = () => { try { localStorage.setItem("lang", $("langSel").value); } catch {} };
+  $("micBtn").onclick = () => {
+    if (listening) return listening.stop();
+    if (!voiceInputOK()) return say("Voice input needs Chrome or Edge. You can still type.", "bad");
+    stopSpeaking();
+    $("micBtn").textContent = "Listening... tap to stop";
+    listening = listen($("langSel").value, t => sendToBaby(t), m => say(m, "bad"),
+      () => { listening = null; $("micBtn").textContent = "Tap to talk"; });
+  };
+
+  function showGames() {
+    const list = $("gameList");
+    list.textContent = "";
+    const stage = stageFor(current.xp).label;
+    if (!GAME_STAGES.includes(stage)) {
+      list.textContent = current.name + " is too little to invent games. Toddlers can.";
+      $("inventBtn").classList.add("hidden");
+      return;
+    }
+    $("inventBtn").classList.remove("hidden");
+    const games = current.games || [];
+    if (!games.length) list.textContent = "No games yet. Ask " + current.name + " to invent one.";
+    games.forEach(g => {
+      const b = document.createElement("button");
+      b.type = "button"; b.textContent = g.title; b.onclick = () => startGame(g);
+      list.append(b, " ");
+    });
+  }
+  $("gamesBtn").onclick = () => {
+    $("gamePanel").classList.toggle("hidden");
+    if (!$("gamePanel").classList.contains("hidden")) showGames();
+  };
+
+  function startGame(g) {
+    const stage = stageFor(current.xp).label;
+    $("gameArea").classList.remove("hidden");
+    if (voiceOn && g.intro) speak(g.intro, stage, current.gender, current.mood, $("langSel").value);
+    playGame(g, $("gameArea"), stage, async () => {
+      const pt = playTick(current);
+      const t = traitsOf(current);
+      t.trust = Math.min(100, t.trust + 1);
+      const upd = { ...pt.fields, mood: "happy", personality: t };
+      const gain = pt.earn ? 4 : 0;
+      const before = stageFor(current.xp).label;
+      try {
+        await updateDoc(doc(db, "babies", auth.currentUser.uid), { ...upd, xp: increment(gain) });
+        Object.assign(current, upd);
+        current.xp = (current.xp || 0) + gain;
+        happyUntil = Date.now() + 5000;
+        $("babyInfo").textContent = babyInfo(current);
+        const after = stageFor(current.xp).label;
+        if (after !== before) say(current.name + " grew into " + (/^[aeiou]/.test(after) ? "an " : "a ") + after + "!", "ok");
+        else say(pt.earn ? "That was fun! +" + gain + " growth." : current.name + " had fun, but is tired of games for today (no more growth).", "ok");
+      } catch (err) { say(nice(err), "bad"); }
+    });
+  }
+
+  $("inventBtn").onclick = async () => {
+    if (busy) return;
+    if (AI_URL.includes("PASTE")) return say("The AI is not connected yet. Add the Worker link in ai-config.js.", "bad");
+    if (chatLeft(current) <= 0) return say("Your baby is tired for today. Come back tomorrow.");
+    busy = true; $("inventBtn").disabled = true;
+    say(current.name + " is thinking of a game...");
+    try {
+      const g = await inventGame(AI_URL, current, stageFor(current.xp).label);
+      const upd = { games: [...(current.games || []), g].slice(-8), ...usage(current) };
+      await updateDoc(doc(db, "babies", auth.currentUser.uid), upd);
+      Object.assign(current, upd);
+      updateLeft(); showGames();
+      say(current.name + " invented " + g.title + "!", "ok");
+      startGame(g);
+    } catch (err) {
+      say(err.message === "rate" ? "Your baby is sleeping (the free AI is busy). Try again in a minute." : "Your baby could not think of a game. Try again.", "bad");
+    } finally { busy = false; $("inventBtn").disabled = false; }
+  };
+
+  // ---------- Online park ----------
+  let presenceRaw = [], parkUnsubs = [], beat = null, lastWho = "";
+  async function writePresence() {
+    await setDoc(doc(db, "park_presence", auth.currentUser.uid), {
+      owner: current.owner, babyName: current.name, gender: current.gender,
+      stage: stageFor(current.xp).label, mood: current.mood || "calm", seen: serverTimestamp()
+    });
+  }
+  function paintPark() {
+    const now = Date.now();
+    const here = presenceRaw.filter(p => now - p.t < 300000);
+    $("parkScene").textContent = drawScene(here, tick, auth.currentUser.uid);
+    const who = here.map(p => p.babyName + " (" + p.owner + ")").join(", ") || "Nobody yet";
+    if (who !== lastWho) { lastWho = who; $("parkWho").textContent = "In the park: " + who; }
+  }
+  function renderFeed(items) {
+    const feed = $("parkFeed");
+    feed.textContent = "";
+    if (!items.length) feed.textContent = "No messages yet. Say hello!";
+    for (const m of items) {
+      const p = document.createElement("p");
+      const mine = m.uid === auth.currentUser.uid;
+      p.className = mine ? "u" : (m.kind === "baby" ? "b" : "");
+      const who = m.kind === "baby" ? m.babyName + " (" + m.stage + ", " + m.owner + "'s baby)" : m.owner;
+      p.textContent = who + ": " + m.text;
+      if (!mine) {
+        const a = document.createElement("button");
+        a.type = "button"; a.textContent = "Let " + current.name + " answer";
+        a.onclick = () => answerMessage(m);
+        p.append(a);
+      }
+      if (isAdmin) {
+        const d = document.createElement("button");
+        d.type = "button"; d.textContent = "Delete";
+        d.onclick = () => deleteDoc(doc(db, "park_messages", m.id)).catch(err => say(nice(err), "bad"));
+        p.append(d);
+      }
+      feed.append(p);
+    }
+    feed.scrollTop = feed.scrollHeight;
+  }
+  async function joinPark() {
+    show("park");
+    lastWho = ""; presenceRaw = [];
+    $("parkLeft").textContent = chatLeft(current) + " baby answers left today";
+    try { await writePresence(); } catch (err) { say(nice(err), "bad"); }
+    beat = setInterval(() => writePresence().catch(() => {}), 120000);
+    parkUnsubs.push(onSnapshot(collection(db, "park_presence"), snap => {
+      presenceRaw = [];
+      snap.forEach(d => {
+        const v = d.data({ serverTimestamps: "estimate" });
+        presenceRaw.push({ uid: d.id, ...v, t: v.seen?.toMillis?.() ?? Date.now() });
+      });
+    }, err => say(nice(err), "bad")));
+    parkUnsubs.push(onSnapshot(query(collection(db, "park_messages"), orderBy("createdAt", "desc"), limit(30)), snap => {
+      const items = [];
+      snap.forEach(d => items.push({ id: d.id, ...d.data({ serverTimestamps: "estimate" }) }));
+      renderFeed(items.reverse());
+    }, err => say(nice(err), "bad")));
+  }
+  function stopPark() {
+    parkUnsubs.forEach(u => u()); parkUnsubs = [];
+    if (beat) clearInterval(beat);
+    beat = null; presenceRaw = [];
+  }
+  async function leavePark() {
+    const uid = auth.currentUser.uid;
+    stopPark();
+    try { await deleteDoc(doc(db, "park_presence", uid)); } catch {}
+    await loadHome();
+  }
+  $("parkBtn").onclick = joinPark;
+  $("leavePark").onclick = leavePark;
+  addEventListener("pagehide", () => { if (beat && auth.currentUser) deleteDoc(doc(db, "park_presence", auth.currentUser.uid)).catch(() => {}); });
+
+  $("parkForm").onsubmit = async e => {
+    e.preventDefault();
+    const text = $("parkInput").value.trim();
+    if (!text) return;
+    if (Date.now() - lastChat < 2000) return say("Slow down a little.");
+    lastChat = Date.now();
+    $("parkInput").value = "";
+    try {
+      await addDoc(collection(db, "park_messages"), {
+        kind: "player", uid: auth.currentUser.uid, owner: current.owner,
+        text: text.slice(0, 200), createdAt: serverTimestamp()
+      });
+    } catch (err) { say(nice(err), "bad"); $("parkInput").value = text; }
+  };
+
+  async function answerMessage(m) {
+    if (busy) return;
+    if (AI_URL.includes("PASTE")) return say("The AI is not connected yet. Add the Worker link in ai-config.js.", "bad");
+    if (chatLeft(current) <= 0) return say("Your baby is tired for today. Come back tomorrow.");
+    if (Date.now() - lastChat < 3000) return say("Give your baby a second to think.");
+    busy = true; lastChat = Date.now();
+    say(current.name + " is thinking...");
+    try {
+      const before = stageFor(current.xp).label;
+      const who = m.kind === "baby" ? "Another baby named " + m.babyName + " (owner " + m.owner + ")" : "A player named " + m.owner;
+      const r = await askBaby(AI_URL, current, before, who + ' says to you in the park: "' + m.text + '". Answer them directly. They are not your owner.');
+      const { update, gain } = applyMeet(current, m.text, r);
+      await updateDoc(doc(db, "babies", auth.currentUser.uid), { ...update, xp: increment(gain) });
+      Object.assign(current, update);
+      current.xp = (current.xp || 0) + gain;
+      await addDoc(collection(db, "park_messages"), {
+        kind: "baby", uid: auth.currentUser.uid, owner: current.owner, babyName: current.name, stage: before,
+        text: String(r.reply || "...").slice(0, 200), createdAt: serverTimestamp()
+      });
+      writePresence().catch(() => {});
+      $("parkLeft").textContent = chatLeft(current) + " baby answers left today";
+      const after = stageFor(current.xp).label;
+      say(after !== before ? current.name + " grew into " + (/^[aeiou]/.test(after) ? "an " : "a ") + after + "!" : "", after !== before ? "ok" : "");
+    } catch (err) {
+      say(err.message === "rate" ? "Your baby is sleeping (the free AI is busy). Try again in a minute." : "Your baby could not answer. Try again.", "bad");
+    } finally { busy = false; }
+  }
+
+  // Watch login state
+  onAuthStateChanged(auth, async user => {
+    if (!user) { isAdmin = false; stopSpeaking(); stopPark(); return show("auth"); }
+    try {
+      const a = await getDoc(doc(db, "admins", user.uid));
+      isAdmin = a.exists();
+    } catch { isAdmin = false; }
+    try { await loadHome(); } catch (err) { say(nice(err), "bad"); }
+  });
+</script>
+</body>
+</html>
